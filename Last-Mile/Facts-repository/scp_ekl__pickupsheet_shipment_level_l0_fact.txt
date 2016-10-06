@@ -1,0 +1,62 @@
+INSERT OVERWRITE TABLE pickupsheet_shipment_level_l0_fact
+select distinct pickupsheet_info.entityid as tasklist_id,
+       pickupsheet_info.shipment_id as vendor_tracking_id,
+       if(shipment_info.shipment_actioned_flag = 'y',1,0) as shipment_actioned_flag,
+       cast(shipment_info.min_update as timestamp) as shipment_pickup_datetime_from_pickupsheet,
+       shipment_fact.ekl_shipment_type as shipment_type,
+       shipment_fact.payment_type as payment_type,
+       shipment_fact.payment_mode as payment_mode,
+       shipment_undelivery_info.undelivered_status as undelivered_status
+FROM
+(
+select entityid,split(exp,'-')[1] as shipment_id
+from bigfoot_snapshot.dart_wsr_scp_ekl_lastmiletasklist_1_3_view
+lateral view explode(`data`.task_ids) exploded_table as exp 
+where lower(`data`.document_type) = 'pickupsheet'
+) pickupsheet_info
+left outer join 
+(
+select LMTL_NOT_EXP.entityid AS entityid,
+LMT_EXP.exp1 AS LMT_shipment_id,
+LMT_EXP.min_update as min_update,
+LMT_EXP.shipment_actioned_flag as shipment_actioned_flag
+from 
+(
+select entityid from bigfoot_snapshot.dart_wsr_scp_ekl_lastmiletasklist_1_3_view
+where `data`.document_type = 'pickupsheet'
+) LMTL_NOT_EXP
+LEFT OUTER JOIN ( 
+select entityid,exp FROM
+(
+select entityid,`data`.task_ids as task_ids from bigfoot_snapshot.dart_wsr_scp_ekl_lastmiletasklist_1_3_view
+) d
+lateral view explode(task_ids) exploded_table as exp
+)  LMTL_EXP
+ON LMTL_EXP.entityid = LMTL_NOT_EXP.entityid
+LEFT OUTER JOIN (
+select 'y' as shipment_actioned_flag,first_id,second_id,exp1,min_update from
+(
+select `data`.shipment_ids as shipment_ids,
+SPLIT(entityid,"-")[1] as first_id,
+SPLIT(entityid,"-")[2] as second_id,
+min(updatedat) as min_update
+from bigfoot_journal.dart_wsr_scp_ekl_lastmiletask_1_2
+where lower(`data`.status) IN ('pickup_picked_complete')
+group by `data`.shipment_ids,SPLIT(entityid,"-")[1],SPLIT(entityid,"-")[2]
+) h
+lateral view explode(shipment_ids) exploded_table as exp1
+) LMT_EXP
+ON concat(split(LMTL_EXP.entityid,'-')[1],'-',split(LMTL_EXP.exp,'-')[1]) = concat(first_id,'-',second_id)
+) shipment_info
+ON concat(split(pickupsheet_info.entityid,'-')[1],'-',pickupsheet_info.shipment_id) = concat(split(shipment_info.entityid,'-')[1],'-',shipment_info.LMT_shipment_id) 
+left outer JOIN
+bigfoot_external_neo.scp_ekl__shipment_l1_90_fact shipment_fact
+ON shipment_fact.vendor_tracking_id = pickupsheet_info.shipment_id
+LEFT OUTER JOIN 
+(
+select entityid,
+      `data`.status as undelivered_status from bigfoot_journal.dart_wsr_scp_ekl_lastmiletask_1_2
+      where lower(`data`.status) like ('%undelivered%') and lower(`data`.status) NOT IN ('undelivered_attempted')
+     
+) shipment_undelivery_info
+ON split(shipment_undelivery_info.entityid,'-')[1] = split(pickupsheet_info.entityid,'-')[1] ;

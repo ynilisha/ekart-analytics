@@ -1,0 +1,42 @@
+INSERT overwrite TABLE dh_escalation_fact
+select ticketid
+,tat
+,actual_createdate_key
+,actual_createtime_key
+,end_createdate_key
+,end_createtime_key
+,strt_createdate_key
+,strt_createtime_key
+,end_updatedate_key
+,end_updatetime_key
+,strt_updatedate_key
+,strt_updatetime_key
+,resolutiondate_key
+,resolutiontime_key
+,shipmentid
+,strt_state
+,assigned_state
+,end_state
+,ticket_created_hub_id_key
+,ticket_assigned_hub_id_key
+,ticket_current_hub_id_key
+,agent_id_key
+,description
+,resolution
+,first_undelivery_status
+,last_undelivery_status
+,payment_type
+,ekl_shipment_type
+,shipment_fa_flag
+,source_pincode_key
+,destination_pincode_key
+,customer_misroute_flag
+,rto_create_date_key
+,issue_type
+,priority 
+,primary_product_key
+,seller_type
+,shipment_value
+,ekl_fin_zone
+,shipment_lzn_classification
+from bigfoot_external_neo.scp_ekl__dh_speedv2_fact;

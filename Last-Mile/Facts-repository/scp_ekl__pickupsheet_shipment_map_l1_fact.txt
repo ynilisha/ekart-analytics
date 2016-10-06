@@ -1,0 +1,50 @@
+INSERT OVERWRITE TABLE pickupsheet_shipment_map_l1_fact
+SELECT distinct pickupsheet.tasklist_id,
+pickupsheet.tasklist_type, 
+pickupsheet.facility_id,
+pickupsheet.vehicle_id,
+pickupsheet.primary_agent_id,
+pickupsheet.secondary_agent_id_1,
+pickupsheet.secondary_agent_id_2,
+pickupsheet.secondary_agent_id_3,
+pickupsheet.secondary_agent_id_4,
+pickupsheet.secondary_agent_id_5,
+pickupsheet.tasklist_closed_date_time,
+pickupsheet.tasklist_start_date_time,
+pickupsheet.tasklist_end_date_time,
+pickupsheet.tasklist_no_of_shipments_attempted,
+pickupsheet.tasklist_first_action_date_time,
+pickupsheet.tasklist_last_action_date_time,
+pickupsheet.tasklist_pos_id, 
+pickupsheet.tasklist_smart_device_id,
+pickupsheet.agent_and_date,
+pickupsheet.vehicle_and_date,
+pickupsheet.vehicle_type,
+pickupsheet.tasklist_created_date_time,
+shipment.vendor_tracking_id,
+shipment.shipment_actioned_flag,
+shipment.shipment_pickup_datetime_from_pickupsheet,
+shipment.shipment_type,
+shipment.payment_type,
+shipment.payment_mode,
+shipment.undelivered_status,
+shipment_90.shipment_flash_flag,
+if (upper(dim2.name) like 'URS_%','URS',(if (upper(dim2.name) like 'VENDOR_%','LMA','EKART'))) as  adm_flag,
+row_number() OVER(PARTITION BY shipment.vendor_tracking_id ORDER BY pickupsheet.tasklist_id) AS attempt_no,
+shipment_90.shipment_item_unit_dispatch_service_tier,
+shipment_90.core_fsn_flag,
+shipment_90.shipment_lzn_classification,
+device.sync_uploadedat as device_update_time,
+device.deviceid,
+Case when lookup_time(pickupsheet.tasklist_created_date_time) <=1100 then 1 when lookup_time(pickupsheet.tasklist_created_date_time) >1100 and lookup_time(pickupsheet.tasklist_created_date_time) <=1530 then 2 when lookup_time(pickupsheet.tasklist_created_date_time) >1700 then 3 
+end as wave
+from bigfoot_external_neo.scp_ekl__pickupsheet_l0_fact pickupsheet
+left outer join bigfoot_external_neo.scp_ekl__pickupsheet_shipment_level_l0_fact shipment
+ON pickupsheet.tasklist_id = shipment.tasklist_id
+left outer join bigfoot_external_neo.scp_ekl__shipment_hive_90_fact shipment_90
+ON shipment_90.vendor_tracking_id = shipment.vendor_tracking_id
+left outer join bigfoot_external_neo.scp_ekl__agent_hive_dim dim2
+on pickupsheet.primary_agent_id=dim2.agent_id
+left outer join bigfoot_external_neo.scp_ekl__ekartapp_data_l1_fact device
+on device.shipment_id=shipment.vendor_tracking_id and device.sheetid=SPLIT(pickupsheet.tasklist_id,"-")[1]
+and device.entitytype='REVERSE_SHIPMENT';

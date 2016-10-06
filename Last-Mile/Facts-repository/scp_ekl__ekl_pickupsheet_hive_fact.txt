@@ -1,0 +1,127 @@
+INSERT OVERWRITE TABLE ekl_pickupsheet_hive_fact
+select 
+tasklist_id,
+tasklist_type,
+facility_id_key,
+vehicle_id,
+primary_agent_id_key,
+secondary_agent_id_1_key,
+secondary_agent_id_2_key,
+secondary_agent_id_3_key,
+secondary_agent_id_4_key,
+secondary_agent_id_5_key,
+tasklist_created_date_key,
+tasklist_created_time_key,
+tasklist_closed_date_key,
+tasklist_closed_time_key,
+tasklist_start_date_key,
+tasklist_start_time_key,
+tasklist_end_date_key,
+tasklist_end_time_key,
+tasklist_no_of_shipments_attempted,
+tasklist_no_of_shipments_actioned,
+forward_actioned.tasklist_no_of_shipments_forward_actioned,
+bike_forward_actioned.tasklist_no_of_shipments_bike_forward_actioned,
+van_forward_actioned.tasklist_no_of_shipments_van_forward_actioned,
+tasklist_no_of_shipments_not_actioned,
+tasklist_first_action_date_key,
+tasklist_first_action_time_key,
+tasklist_last_action_date_key,
+tasklist_last_action_time_key,
+tasklist_pos_id,
+tasklist_smart_device_id,
+agent_and_date,
+vehicle_and_date,
+vehicle_type,
+pos_key,
+device_key,
+bike_actioned.tasklist_no_of_shipments_bike_actioned,
+van_actioned.tasklist_no_of_shipments_van_actioned,
+forward_attempted.tasklist_no_of_shipments_forward_attempted,
+bike_forward_attempted.tasklist_no_of_shipments_bike_forward_attempted,
+bike_attempted.tasklist_no_of_shipments_bike_attempted,
+van_forward_attempted.tasklist_no_of_shipments_van_forward_attempted,
+van_attempted.tasklist_no_of_shipments_van_attempted,
+null,
+null,
+null,
+null,
+null,
+null,
+adm_flag,wave
+from
+(
+select 
+tasklist_id,
+tasklist_type,
+lookupkey('facility_id',facility_id) as facility_id_key ,
+vehicle_id,
+lookupkey('agent_id',primary_agent_id) as primary_agent_id_key ,
+lookupkey('agent_id',secondary_agent_id_1) as secondary_agent_id_1_key,
+lookupkey('agent_id',secondary_agent_id_2) as secondary_agent_id_2_key,
+lookupkey('agent_id',secondary_agent_id_3) as secondary_agent_id_3_key,
+lookupkey('agent_id',secondary_agent_id_4) as secondary_agent_id_4_key,
+lookupkey('agent_id',secondary_agent_id_5) as secondary_agent_id_5_key,
+lookup_date(tasklist_created_date_time) as tasklist_created_date_key,
+lookup_time(tasklist_created_date_time) as tasklist_created_time_key,
+lookup_date(tasklist_closed_date_time) as tasklist_closed_date_key,
+lookup_time(tasklist_closed_date_time) as tasklist_closed_time_key,
+lookup_date(tasklist_start_date_time) as tasklist_start_date_key,
+lookup_time(tasklist_start_date_time) as tasklist_start_time_key,
+lookup_date(tasklist_end_date_time) as tasklist_end_date_key,
+lookup_time(tasklist_end_date_time) as tasklist_end_time_key,
+tasklist_no_of_shipments_attempted,
+tasklist_no_of_shipments_actioned,
+(tasklist_no_of_shipments_attempted - tasklist_no_of_shipments_actioned ) as tasklist_no_of_shipments_not_actioned,
+lookup_date(tasklist_first_action_date_time) as tasklist_first_action_date_key,
+lookup_time(tasklist_first_action_date_time) as tasklist_first_action_time_key,
+lookup_date(tasklist_last_action_date_time)  as tasklist_last_action_date_key,
+lookup_time(tasklist_last_action_date_time) as tasklist_last_action_time_key ,
+tasklist_pos_id,
+tasklist_smart_device_id,
+agent_and_date,
+vehicle_and_date,
+vehicle_type,
+lookupkey('device_id',tasklist_pos_id) as pos_key,
+lookupkey('device_id',tasklist_smart_device_id) as device_key,
+adm_flag,wave
+from (select distinct a.tasklist_id,a.tasklist_type,a.vehicle_id,a.facility_id,a.primary_agent_id,a.wave,a.secondary_agent_id_1,a.secondary_agent_id_2,a.secondary_agent_id_3,a.secondary_agent_id_4,a.secondary_agent_id_5,a.tasklist_created_date_time,a.tasklist_closed_date_time,a.tasklist_start_date_time,a.tasklist_end_date_time,a.tasklist_no_of_shipments_attempted,a.tasklist_first_action_date_time,a.tasklist_last_action_date_time,a.tasklist_pos_id,a.tasklist_smart_device_id,a.agent_and_date,a.vehicle_and_date,a.vehicle_type,a.undelivered_status,a.adm_flag,b.tasklist_no_of_shipments_actioned from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact a
+left outer join (select tasklist_id,count(distinct vendor_tracking_id) as tasklist_no_of_shipments_actioned from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact where shipment_actioned_flag = 1 group by tasklist_id ) b
+ON a.tasklist_id = b.tasklist_id ) pickupsheet_info
+) complete
+left outer join (select tasklist_id as tasklist_id1 ,count(distinct vendor_tracking_id) as tasklist_no_of_shipments_forward_actioned  from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact
+where shipment_type = 'forward' and shipment_actioned_flag = 1 group by tasklist_id) forward_actioned
+ON complete.tasklist_id = forward_actioned.tasklist_id1
+left outer join (select tasklist_id as tasklist_id1,count(distinct vendor_tracking_id) as tasklist_no_of_shipments_bike_forward_actioned  from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact
+where shipment_type = 'forward' and shipment_actioned_flag = 1 and lower(vehicle_type) = 'bike' group by tasklist_id) bike_forward_actioned
+ON complete.tasklist_id = bike_forward_actioned.tasklist_id1
+left outer join (select tasklist_id as tasklist_id1,count(distinct vendor_tracking_id) as tasklist_no_of_shipments_van_forward_actioned  from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact
+where shipment_type = 'forward' and shipment_actioned_flag = 1 and lower(vehicle_type) IN ('van','adhoc_van') group by tasklist_id) van_forward_actioned
+ON complete.tasklist_id = van_forward_actioned.tasklist_id1 
+left outer join (select tasklist_id as tasklist_id1,count(distinct vendor_tracking_id) as tasklist_no_of_shipments_van_actioned  from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact
+where shipment_actioned_flag = 1 and lower(vehicle_type) IN ('van','adhoc_van') group by tasklist_id) van_actioned
+ON complete.tasklist_id = van_actioned.tasklist_id1
+left outer join (select tasklist_id as tasklist_id1,count(distinct vendor_tracking_id) as tasklist_no_of_shipments_bike_actioned  from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact
+where shipment_actioned_flag = 1 and lower(vehicle_type) = 'bike' group by tasklist_id) bike_actioned
+ON complete.tasklist_id = bike_actioned.tasklist_id1 
+left outer join (select tasklist_id as tasklist_id1,count(distinct vendor_tracking_id) as tasklist_no_of_shipments_forward_attempted  from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact
+where shipment_type = 'forward' group by tasklist_id) forward_attempted
+ON complete.tasklist_id = forward_attempted.tasklist_id1
+left outer join (select tasklist_id as tasklist_id1,count(distinct vendor_tracking_id) as tasklist_no_of_shipments_bike_forward_attempted  from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact
+where shipment_type = 'forward' and lower(vehicle_type) = 'bike' group by tasklist_id) bike_forward_attempted 
+ON complete.tasklist_id = bike_forward_attempted.tasklist_id1
+left outer join (select tasklist_id as tasklist_id1,count(distinct vendor_tracking_id) as tasklist_no_of_shipments_bike_attempted from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact
+where lower(vehicle_type) = 'bike' group by tasklist_id) bike_attempted 
+ON complete.tasklist_id = bike_attempted.tasklist_id1
+left outer join (select tasklist_id as tasklist_id1,count(distinct vendor_tracking_id) as tasklist_no_of_shipments_van_forward_attempted  from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact
+where shipment_type = 'forward' and lower(vehicle_type) IN ('van','adhoc_van') group by tasklist_id) van_forward_attempted 
+ON complete.tasklist_id = van_forward_attempted.tasklist_id1
+left outer join (select tasklist_id as tasklist_id1,count(distinct vendor_tracking_id) as tasklist_no_of_shipments_van_attempted  from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact
+where lower(vehicle_type) IN ('van','adhoc_van') group by tasklist_id) van_attempted 
+ON complete.tasklist_id = van_attempted.tasklist_id1
+left outer join (select tasklist_id as tasklist_id1,count(distinct vendor_tracking_id) as tasklist_no_of_shipments_device_actioned  from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact
+where tasklist_smart_device_id is not null and shipment_actioned_flag = 1 group by tasklist_id) device_actioned 
+ON complete.tasklist_id = device_actioned.tasklist_id1
+left outer join (select tasklist_id as tasklist_id1,count(distinct vendor_tracking_id) as tasklist_no_of_shipments_device_attempted  from bigfoot_external_neo.scp_ekl__pickupsheet_shipment_map_l1_fact
+where tasklist_smart_device_id is not null  group by tasklist_id) device_attempted 
+ON complete.tasklist_id = device_attempted.tasklist_id1;

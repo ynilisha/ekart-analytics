@@ -1,0 +1,12 @@
+INSERT OVERWRITE TABLE shipment_adm_intermediate_fact
+Select 
+ vendor_tracking_id,
+ status,
+ max(rank) as max_rank,
+ min(rank) as min_rank
+from
+(select `data`.vendor_tracking_id as vendor_tracking_id,`data`.status as status,updatedat,RANK() OVER 
+(partition by `data`.vendor_tracking_id order by updatedat) as rank 
+from bigfoot_journal.dart_wsr_scp_ekl_shipment_4  where  day > date_format(date_sub(current_date,100),'yyyyMMdd') and lower(`data`.status) in 
+('out_for_delivery','ready_for_pickup','delivered') and lower(`data`.current_address.type)='pickup_center')T1
+group by vendor_tracking_id,status;

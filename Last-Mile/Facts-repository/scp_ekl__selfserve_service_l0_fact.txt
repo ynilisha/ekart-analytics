@@ -1,0 +1,69 @@
+INSERT OVERWRITE TABLE selfserve_service_l0_fact
+select 
+facility_id_key,
+agent_id_key,
+tasklist_created_date_key,
+tasklist_created_time_key,
+shipment_actioned_flag,
+attempt_no,
+tasklist_id,
+request_type,
+event_type,
+cancel_comment,
+cancel_reason,
+expected_delivery_date,
+rescheduled_delivery_date,
+alternate_contact_number,
+primary_contact_number,
+shipment_status,
+updater,
+product_title,
+merchant_brand_name,
+vendor_tracking_id,
+shipment_delivered_at_datetime,
+update_date_time
+from(select 
+lookupkey('facility_id',fact.facility_id) as facility_id_key,
+lookupkey('agent_id',primary_agent_id) as agent_id_key,
+lookup_date(tasklist_created_date_time) as tasklist_created_date_key,
+lookup_time(tasklist_created_date_time) as tasklist_created_time_key,
+fact.shipment_actioned_flag,
+fact.attempt_no,
+self.vendor_tracking_id,
+self.tasklist_id,
+self.request_type,
+self.event_type,
+self.cancel_comment,
+self.cancel_reason,
+self.expected_delivery_date,
+self.rescheduled_delivery_date,
+self.alternate_contact_number,
+self.primary_contact_number,
+self.shipment_status,
+self.updater,
+self.product_title,
+self.merchant_brand_name,
+fact.shipment_delivered_at_datetime,
+row_number() over(partition by self.vendor_tracking_id,self.tasklist_id,self.request_type,self.event_type order by  update_date_time desc) as rnk,
+self.update_date_time
+from
+(select
+`data`.shipment_id as vendor_tracking_id
+,concat("Runsheet-",`data`.runsheet_id) as tasklist_id
+,`data`.request_type
+,`data`.cancel_comment
+,`data`.expected_delivery_date
+,`data`.product_title
+,`data`.rescheduled_delivery_date
+,`data`.updater
+,`data`.cancel_reason
+,`data`.event_type
+,`data`.alternate_contact_number
+,`data`.primary_contact_number
+,`data`.merchant_brand_name
+,`data`.update_date_time
+,`data`.shipment_status
+from bigfoot_journal.dart_wsr_scp_ekl_selfserveservice_1) self
+left outer join bigfoot_external_neo.scp_ekl__runsheet_shipment_map_l1_fact fact 
+on fact.tasklist_id=self.tasklist_id and self.vendor_tracking_id=fact.vendor_tracking_id)a
+where rnk=1;

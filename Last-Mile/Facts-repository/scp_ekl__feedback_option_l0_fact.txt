@@ -1,0 +1,10 @@
+INSERT OVERWRITE TABLE feedback_option_l0_fact
+select
+`data`.questionid,
+`data`.option,
+entityid as optionid,
+`data`.rating,
+`data`.tickettype,
+`data`.isticket,
+`data`.isactive
+from bigfoot_snapshot.dart_fkint_scp_ekl_feedback_options_1_1_view;

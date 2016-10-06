@@ -1,0 +1,46 @@
+
+INSERT OVERWRITE TABLE selfserve_service_fact
+select 
+tasklist_id             
+,facility_id_key         
+,agent_id_key            
+,tasklist_created_date_key      
+,tasklist_created_time_key      
+,shipment_actioned_flag 
+,attempt_no             
+,lookup_date(expected_delivery_date) as expected_delivery_date_key
+,lookup_time(expected_delivery_date) as expected_delivery_time_key
+,lookup_date(rescheduled_delivery_date) as rescheduled_delivery_date_key
+,lookup_time(rescheduled_delivery_date) as rescheduled_delivery_time_key
+,lookup_date(cancellation_trigger_time) as cancellation_trigger_date_key
+,lookup_time(cancellation_trigger_time) as cancellation_trigger_time_key
+,lookup_date(cancellation_landing_time) as cancellation_landing_date_key
+,lookup_time(cancellation_landing_time) as cancellation_landing_time_key
+,lookup_date(cancellation_confirmation_time) as cancellation_confirmation_date_key
+,lookup_time(cancellation_confirmation_time) as cancellation_confirmation_time_key
+,lookup_date(acn_trigger_time) as acn_trigger_date_key
+,lookup_time(acn_trigger_time) as acn_trigger_time_key
+,lookup_date(acn_landing_time) as acn_landing_date_key
+,lookup_time(acn_landing_time) as acn_landing_time_key 
+,lookup_date(acn_confirmation_time) as acn_confirmation_date_key   
+,lookup_time(acn_confirmation_time) as acn_confirmation_time_key
+,lookup_date(reschedule_trigger_time) as reschedule_confirmation_date_key
+,lookup_time(reschedule_trigger_time) as reschedule_trigger_time_key
+,lookup_date(reschedule_landing_time) as reschedule_confirmation_date_key
+,lookup_time(reschedule_landing_time) as reschedule_landing_time_key
+,lookup_date(reschedule_confirmation_time) as reschedule_confirmation_date_key
+,lookup_time(reschedule_confirmation_time) as reschedule_confirmation_time_key
+,cancel_comment         
+,cancel_reason          
+,alternate_contact_number    
+,reschedule_shipment_status  
+,reschedule_updater     
+,acn_shipment_status    
+,acn_updater            
+,cancel_shipment_status 
+,cancel_updater         
+,primary_contact_number 
+,product_title          
+,merchant_brand_name    
+,vendor_tracking_id
+from bigfoot_external_neo.scp_ekl__selfserve_service_l1_fact;

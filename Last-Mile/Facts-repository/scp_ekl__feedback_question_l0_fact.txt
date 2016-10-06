@@ -1,0 +1,8 @@
+INSERT OVERWRITE TABLE feedback_question_l0_fact
+select 
+`data`.questionid,
+`data`.question,
+`data`.isactive,	
+`data`.category,
+`data`.type
+from bigfoot_snapshot.dart_fkint_scp_ekl_feedback_questions_1_0_view;

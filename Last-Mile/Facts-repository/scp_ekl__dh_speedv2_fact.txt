@@ -1,0 +1,107 @@
+INSERT overwrite TABLE dh_speedv2_fact
+SELECT c.ticketid
+,c.createdate_key AS actual_createdate_key
+,c.createtime_key AS actual_createtime_key
+,CASE
+WHEN  b.updatetime_key < 900 or (b.updatetime_key is NULL and c.createtime_key<900) THEN 
+CASE WHEN a.updatetime_key < 900 THEN 
+CASE WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) = 0 THEN 0 
+WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) > 0 
+THEN (datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) *720) END
+WHEN a.updatetime_key <= 2100 AND a.updatetime_key >= 900 THEN 
+CASE WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) = 0  THEN ((hour(a.updatedatetime) - 9) * 60) + minute(a.updatedatetime) WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) > 0 THEN ((hour(a.updatedatetime) - 9) * 60) + minute(a.updatedatetime) + (datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) *720) END
+WHEN a.updatetime_key > 2100
+THEN CASE WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) = 0 THEN 720 
+WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) > 0 
+THEN (datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) + 1) *720 END
+END
+WHEN  (b.updatetime_key >= 900 AND b.updatetime_key <= 2100) or(b.updatetime_key is NULL and  c.createtime_key<= 2100 and c.createtime_key>=900)  THEN 
+CASE WHEN a.updatetime_key <= 900
+THEN CASE WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) = 0 THEN 0 WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) = 1 THEN ((21 - hour(nvl(b.updatedatetime,c.createdatetime))) * 60) - minute(nvl(b.updatedatetime,c.createdatetime)) WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) > 1 THEN (((21 - hour(nvl(b.updatedatetime,c.createdatetime))) * 60) - minute(nvl(b.updatedatetime,c.createdatetime))) + ((datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime))-1) *720) END
+WHEN a.updatetime_key <= 2100 AND a.updatetime_key > 900
+THEN CASE WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) = 0	
+THEN ((hour(a.updatedatetime) - hour(nvl(b.updatedatetime,c.createdatetime))) * 60) + (minute(a.updatedatetime) - minute(nvl(b.updatedatetime,c.createdatetime))) 
+WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) = 1 
+THEN ((21 - hour(nvl(b.updatedatetime,c.createdatetime))) * 60) - minute(nvl(b.updatedatetime,c.createdatetime)) + ((hour(a.updatedatetime) - 9) * 60) + minute(a.updatedatetime) 
+WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) > 1 
+THEN ((21 - hour(nvl(b.updatedatetime,c.createdatetime))) * 60) - minute(nvl(b.updatedatetime,c.createdatetime)) + ((hour(a.updatedatetime) - 9) * 60) + minute(a.updatedatetime) + ((datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime))-1) *720)
+END
+WHEN a.updatetime_key > 2100
+THEN 
+CASE WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) = 0	
+THEN ((21 - hour(nvl(b.updatedatetime,c.createdatetime))) * 60) - minute(nvl(b.updatedatetime,c.createdatetime)) 
+WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) > 0 
+THEN (((21 - hour(nvl(b.updatedatetime,c.createdatetime))) * 60) - minute(nvl(b.updatedatetime,c.createdatetime))) + (datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) *720) 
+END
+END
+WHEN  b.updatetime_key > 2100 or (b.updatetime_key is NULL and c.createtime_key>2100)THEN 
+CASE WHEN a.updatetime_key <= 900 
+THEN CASE WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) = 0 THEN 0 
+WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) = 1 THEN 0 
+WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) > 1 THEN ((datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime))-1) *720) END
+WHEN a.updatetime_key <= 2100 AND a.updatetime_key > 900 
+THEN CASE WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) = 0 THEN 0 WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) = 1 THEN ((hour(a.updatedatetime) - 9) * 60) + minute(a.updatedatetime) WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) > 1 THEN ((hour(a.updatedatetime) - 9) * 60) + minute(a.updatedatetime) + ((datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime))-1) *720) END
+WHEN a.updatetime_key > 2100
+THEN CASE WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) = 0 THEN 0 
+WHEN datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) > 0 
+THEN (datediff(a.updatedatetime, nvl(b.updatedatetime,c.createdatetime)) *720) 
+END
+END
+END AS TAT
+,a.createdate_key AS end_createdate_key
+,a.createtime_key AS end_createtime_key
+,b.createdate_key AS strt_createdate_key
+,b.createtime_key AS strt_createtime_key
+,a.updatedate_key AS end_updatedate_key
+,a.updatetime_key AS end_updatetime_key
+,b.updatedate_key AS strt_updatedate_key
+,b.updatetime_key AS strt_updatetime_key
+,a.resolutiondate_key
+,a.resolutiontime_key
+,c.shipmentid
+,c.STATE AS strt_state
+,b.STATE AS assigned_state
+,a.STATE AS end_state
+,c.fsd_assigned_hub_id_key as ticket_created_hub_id
+,b.fsd_assigned_hub_id_key as ticket_assigned_hub_id
+,a.fsd_assigned_hub_id_key as ticket_current_hub_id 
+,a.fe_name_key as agent_id_key,
+a.description,
+a.resolution,
+a.first_undelivery_status,
+a.last_undelivery_status,
+a.payment_type,
+a.ekl_shipment_type,
+a.shipment_fa_flag,
+a.source_pincode_key,
+a.destination_pincode_key,
+a.customer_misroute_flag,
+a.rto_create_date_key,
+a.issue_type,
+a.priority,
+ship.primary_product_key,
+ship.seller_type,
+ship.shipment_value,
+ship.ekl_fin_zone,
+ship.shipment_lzn_classification
+FROM (select shipmentid,fsd_assigned_hub_id_key,ticketid,createdate_key ,createtime_key,createdatetime ,state 
+from (select shipmentid,fsd_assigned_hub_id_key,ticketid,createdatetime,createdate_key ,createtime_key ,state,
+row_number() OVER (PARTITION BY ticketid ORDER BY updatedate_key asc,updatetime_key asc) AS rnk
+from bigfoot_external_neo.scp_ekl__elixir_l1_fact)a where upper(a.state) ='CREATED' and a.rnk=1) c
+left outer join(
+SELECT 
+shipmentid,ticketid,STATE,updatedatetime,resolutiondate_key,resolutiontime_key,createdate_key,createtime_key,priority,description,assignedto,
+issue_type,fe_name_key,updatedate_key,updatetime_key,fsd_assigned_hub_id_key,resolution,first_undelivery_status,last_undelivery_status,
+payment_type,ekl_shipment_type,shipment_fa_flag,source_pincode_key,destination_pincode_key,customer_misroute_flag,rto_create_date_key 
+FROM (SELECT shipmentid,ticketid,STATE,updatedatetime,resolutiondate_key,resolutiontime_key,createdate_key,createtime_key,priority,description,assignedto,
+issue_type,fe_name_key,updatedate_key,updatetime_key,fsd_assigned_hub_id_key,resolution,first_undelivery_status,last_undelivery_status,
+payment_type,ekl_shipment_type,shipment_fa_flag,source_pincode_key,destination_pincode_key,customer_misroute_flag,rto_create_date_key,
+row_number() OVER (PARTITION BY ticketid ORDER BY updatedate_key DESC,updatetime_key DESC) AS rnk
+FROM bigfoot_external_neo.scp_ekl__elixir_l1_fact fact) a WHERE rnk = 1) a
+on c.ticketid=a.ticketid
+LEFT JOIN (SELECT fsd_assigned_hub_id_key,shipmentid,ticketid,STATE,resolutiondate_key,resolutiontime_key,createdate_key,createtime_key,updatedate_key,updatetime_key,updatedatetime
+FROM (SELECT fsd_assigned_hub_id_key,shipmentid,ticketid,STATE,resolutiondate_key,resolutiontime_key,createdate_key,createtime_key,updatedate_key,
+updatetime_key,updatedatetime,row_number() OVER (PARTITION BY ticketid ORDER BY updatedate_key ASC,updatetime_key ASC) AS rnk
+FROM bigfoot_external_neo.scp_ekl__elixir_l1_fact fact WHERE upper(STATE) = 'ASSIGNED') b WHERE rnk = 1 ) b ON b.ticketid = c.ticketid
+left outer join bigfoot_external_neo.scp_ekl__shipment_hive_90_fact ship
+on  c.shipmentid=ship.vendor_tracking_id;

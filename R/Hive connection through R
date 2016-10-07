@@ -1,0 +1,11 @@
+library(RODBC)
+connect_1 <- odbcConnect("Hive_DB")
+test<-sqlQuery(connect_1,'SET mapred.job.queue.name=adhoc')
+dat <-Sys.Date()-1
+s <-sqlQuery(connect_1,sprintf("SELECT fact.vendor_tracking_id,
+            fact.tasklist_id,
+            agent.employee_id as employee_id,
+            agent.display_name as employee_name
+            FROM bigfoot_external_neo.scp_ekl__runsheet_shipment_map_l1_fact AS fact
+             Left outer join bigfoot_external_neo.scp_ekl__agent_hive_dim agent on fact.primary_agent_id=agent.agent_id
+             WHERE to_date(a.tasklist_created_date_time) BETWEEN to_date('%s') AND to_date('%s') ",dat,dat))

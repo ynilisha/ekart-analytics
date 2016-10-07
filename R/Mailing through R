@@ -1,0 +1,17 @@
+dat1<-Sys.Date()-3
+dat2<-Sys.Date()-1
+#Download the Java file from Java website
+Sys.setenv(JAVA_HOME='C:\\Program Files\\Java\\jdk1.8.0_92\\jre') #Find and set the right Java-jre file in the downloaded folder
+library(rJava)
+library(mailR)
+send.mail(from = "abc@flipkart.com",
+          to = c("xyz1.com","xyz2@flipkart.com","xyz3@flipkart.com"),
+          cc = c("xyz4@flipkart.com","xyz5@flipkart.com "),
+          subject = sprintf("Tracker of Daily Raw data %s to %s .csv", dat1,dat2),#sprintf would include dates in the subject,title and other fields
+          body = sprintf("Please find the attached Files having pilot data From %s to %s",dat1,dat2),
+          html = TRUE,
+          smtp = list(host.name = "mail.nm.flipkart.com",port = 25),
+          #Attaching multiple files along with date
+          attach.files =c(sprintf("Return shipments %s to %s.csv",dat1,dat2),sprintf("ADM shipments %s to %s.csv",dat1,dat2),sprintf("FE shipments %s to %s.csv",dat1,dat2)),
+          authenticate =FALSE,
+          send = TRUE)
